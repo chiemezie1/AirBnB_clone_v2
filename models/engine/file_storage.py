@@ -24,6 +24,10 @@ class FileStorage:
             for key, val in temp.items():
                 temp[key] = val.to_dict()
             json.dump(temp, f)
+    
+    def close(self):
+        """Method for deserializing JSON file to objects"""
+        self.reload()
 
     def reload(self):
         """Loads storage dictionary from file"""
