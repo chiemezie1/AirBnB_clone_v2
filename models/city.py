@@ -1,9 +1,24 @@
 #!/usr/bin/python3
-""" City Module for HBNB project """
+"""
+
+Module Defining City Class
+
+"""
+
 from models.base_model import BaseModel
 
 
 class City(BaseModel):
-    """ The city class, contains state ID and name """
-    state_id = ""
-    name = ""
+    """
+    City Class that inherits from BaseModel
+
+    Attributes:
+        state_id (str): state id
+        name (str): city name
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Constructor for City Class """
+        self.state_id = ""
+        self.name = ""
+        super().__init__(*args, **kwargs)
