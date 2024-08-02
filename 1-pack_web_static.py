@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# A Fabric script that generates a .tgz archive 
+# A Fabric script that generates a .tgz archive
 #    from the contents of the web_static folder
 
 from fabric.api import local
@@ -16,5 +16,7 @@ def do_pack():
         # tar -zcvf filename path
         local("tar -cvzf {} web_static".format(filename))
         return filename
-    except:
+    except Exception as e:
         return None
+    finally:
+        pass
