@@ -1,24 +1,24 @@
-#!/usr/bin/python3
-"""
+#!/usr/bin/python
+""" holds class City"""
+import models
+from models.base_model import BaseModel, Base
+from os import getenv
+import sqlalchemy
+from sqlalchemy import Column, String, ForeignKey
+from sqlalchemy.orm import relationship
 
-Module Defining City Class
 
-"""
-
-from models.base_model import BaseModel
-
-
-class City(BaseModel):
-    """
-    City Class that inherits from BaseModel
-
-    Attributes:
-        state_id (str): state id
-        name (str): city name
-    """
+class City(BaseModel, Base):
+    """Representation of city """
+    if models.storage_t == "db":
+        __tablename__ = 'cities'
+        state_id = Column(String(60), ForeignKey('states.id'), nullable=False)
+        name = Column(String(128), nullable=False)
+        places = relationship("Place", backref="cities")
+    else:
+        state_id = ""
+        name = ""
 
     def __init__(self, *args, **kwargs):
-        """Constructor for City Class """
-        self.state_id = ""
-        self.name = ""
+        """initializes city"""
         super().__init__(*args, **kwargs)
