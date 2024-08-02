@@ -31,8 +31,14 @@ class FileStorage:
         self.__file_path = "file.json"
         self.__objects = {}
 
-    def all(self):
+    def all(self, cls=None):
         """Returns the dictionary __objects"""
+        if cls is not None:
+            new_dict = {}
+            for key, value in self.__objects.items():
+                if cls == value.__class__ or cls == value.__class__.__name__:
+                    new_dict[key] = value
+            return new_dict
         return self.__objects
 
     def new(self, obj):
@@ -60,6 +66,11 @@ class FileStorage:
             pass
         except Exception as e:
             print(e)
-    def all_by_class(self, cls_name):
-        """Returns all instances of a specific class"""
-        return {key: obj for key, obj in self.__objects.items() if obj.__class__.__name__ == cls_name}
+
+    def delete(self, obj=None):
+        """Delete obj from __objects if it’s inside"""
+        if obj is not None:
+            key = "{}.{}".format(obj.__class__.__name__, obj.id)
+            if key in self.__objects:
+                del self.__objects[key]
+                self.save()
