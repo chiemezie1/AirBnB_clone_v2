@@ -9,6 +9,7 @@ env.hosts = ['34.207.61.137', '34.239.255.22']
 env.user = 'ubuntu'
 env.key_filename = '~/.ssh/id_rsa'
 
+
 def do_deploy(archive_path):
     """Distributes an archive to web servers"""
     if not os.path.exists(archive_path):
@@ -18,7 +19,8 @@ def do_deploy(archive_path):
         # Upload the archive to the /tmp/ directory of the web server
         put(archive_path, "/tmp/")
         archive_filename = os.path.basename(archive_path)
-        archive_folder = "/data/web_static/releases/" + archive_filename.split(".")[0]
+        arch_path = "/data/web_static/releases/"
+        archive_folder = arch_path + archive_filename.split(".")[0]
 
         # Create the directory where the archive will be unpacked
         run("mkdir -p {}".format(archive_folder))
