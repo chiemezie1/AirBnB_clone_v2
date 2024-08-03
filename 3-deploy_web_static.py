@@ -1,10 +1,14 @@
 #!/usr/bin/python3
-# A Fabric script that generates a .tgz archive
-#    from the contents of the web_static folder
+# Fabric script to create and distribute an archive to web servers
 
-from fabric.api import local
+from fabric.api import env, local, put, run
 from datetime import datetime
 import os
+
+# Define the hosts
+env.hosts = ['34.207.61.137', '34.239.255.22']
+env.user = 'ubuntu'
+env.key_filename = '~/.ssh/id_rsa'
 
 
 def do_pack():
@@ -17,15 +21,8 @@ def do_pack():
         local("tar -cvzf {} web_static".format(filename))
         return filename
     except Exception as e:
+        print("An error occurred during packing: {}".format(e))
         return None
-    finally:
-        pass
-
-
-# Define the hosts
-env.hosts = ['34.207.61.137', '34.239.255.22']
-env.user = 'ubuntu'
-env.key_filename = '~/.ssh/id_rsa'
 
 
 def do_deploy(archive_path):
@@ -63,5 +60,13 @@ def do_deploy(archive_path):
 
         return True
     except Exception as e:
-        print("An error occurred: {}".format(e))
+        print("An error occurred during deployment: {}".format(e))
         return False
+
+
+def deploy():
+    """Creates and distributes an archive to web servers"""
+    archive_path = do_pack()
+    if archive_path is None:
+        return False
+    return do_deploy(archive_path)
