@@ -1,8 +1,7 @@
 #!/usr/bin/python3
-# Fabric script to create and distribute an archive to web servers, and clean old archives
+# Fabric script to delete out-of-date archives
 
-from fabric.api import env, local, put, run
-from datetime import datetime
+from fabric.api import env, run, local
 import os
 
 # Define the hosts
@@ -10,86 +9,38 @@ env.hosts = ['34.207.61.137', '34.239.255.22']
 env.user = 'ubuntu'
 env.key_filename = '~/.ssh/id_rsa'
 
-
-def do_pack():
-    """Generates a .tgz archive from the contents of the web_static folder"""
-    try:
-        date = datetime.now().strftime("%Y%m%d%H%M%S")
-        local("mkdir -p versions")
-        filename = "versions/web_static_{}.tgz".format(date)
-        local("tar -cvzf {} web_static".format(filename))
-        return filename
-    except Exception as e:
-        print("An error occurred during packing: {}".format(e))
-        return None
-
-
-def do_deploy(archive_path):
-    """Distributes an archive to web servers"""
-    if not os.path.exists(archive_path):
-        return False
-
-    try:
-        # Upload the archive to the /tmp/ directory of the web server
-        put(archive_path, "/tmp/")
-        archive_filename = os.path.basename(archive_path)
-        archive_no_ext = archive_filename.split(".")[0]
-        release_path = "/data/web_static/releases/{}/".format(archive_no_ext)
-
-        # Create the directory where the archive will be unpacked
-        run("mkdir -p {}".format(release_path))
-
-        # Unpack the archive to the created directory
-        run("tar -xzf /tmp/{} -C {}".format(archive_filename, release_path))
-
-        # Delete the uploaded archive from the web server
-        run("rm /tmp/{}".format(archive_filename))
-
-        # Move the unpacked content to the correct directory
-        run("mv {}/web_static/* {}/".format(release_path, release_path))
-
-        # Delete the now-empty web_static directory
-        run("rm -rf {}/web_static".format(release_path))
-
-        # Delete the existing symbolic link
-        run("rm -rf /data/web_static/current")
-
-        # Create a new symbolic link
-        run("ln -s {} /data/web_static/current".format(release_path))
-
-        return True
-    except Exception as e:
-        print("An error occurred during deployment: {}".format(e))
-        return False
-
-
-def deploy():
-    """Creates and distributes an archive to web servers"""
-    archive_path = do_pack()
-    if archive_path is None:
-        return False
-    return do_deploy(archive_path)
-
-
 def do_clean(number=0):
     """Deletes out-of-date archives"""
     number = int(number)
-
+    
+    # Clean local archives
     if number == 0:
         number = 1
 
-    # Local cleanup
-    archives = sorted(os.listdir("versions"))
-    archives_to_delete = archives[:-number]
+    # Get the list of archives in the local versions directory
+    local_archives = sorted(
+        [f for f in os.listdir('versions') if os.path.isfile(os.path.join('versions', f))],
+        reverse=True
+    )
 
-    for archive in archives_to_delete:
-        local("rm -f versions/{}".format(archive))
+    if len(local_archives) > number:
+        archives_to_remove = local_archives[number:]
+        print(f"Deleting the following local archives: {archives_to_remove}")
+        for archive in archives_to_remove:
+            local(f"rm versions/{archive}")
 
-    # Remote cleanup
+    # Clean remote archives
     for host in env.hosts:
-        archives_remote = run("ls -tr /data/web_static/releases").split()
-        archives_remote = [a for a in archives_remote if "web_static_" in a]
-        archives_to_delete_remote = archives_remote[:-number]
-
-        for archive in archives_to_delete_remote:
-            run("rm -rf /data/web_static/releases/{}".format(archive))
+        with env.host_string(host):
+            # Get the list of remote archives in /data/web_static/releases
+            run("ls -1 /data/web_static/releases/ | grep web_static | sort -r > /tmp/archives.txt")
+            remote_archives = run("cat /tmp/archives.txt").split()
+            
+            if len(remote_archives) > number:
+                archives_to_remove = remote_archives[number:]
+                print(f"Deleting the following remote archives on {host}: {archives_to_remove}")
+                for archive in archives_to_remove:
+                    run(f"rm -rf /data/web_static/releases/{archive}")
+            
+            # Remove the temporary file
+            run("rm /tmp/archives.txt")
